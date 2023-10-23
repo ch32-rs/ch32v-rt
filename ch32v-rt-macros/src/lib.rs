@@ -1,7 +1,6 @@
 use proc_macro2::Span;
 use syn::{
-    parse, parse_macro_input, spanned::Spanned, FnArg, ItemFn, PathArguments, ReturnType, Type,
-    Visibility,
+    parse, parse_macro_input, spanned::Spanned, ItemFn, PathArguments, ReturnType, Type, Visibility,
 };
 
 use proc_macro::TokenStream;
