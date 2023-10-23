@@ -12,11 +12,10 @@ keywords = ["wch", "riscv", "runtime", "startup"]
 readme = "README.md"
 license = "MIT/Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-ch32v-rt-macros = { path = "ch32v-rt-macros", version = "0.1.0" }
-
+# For now, unused
+# ch32v-rt-macros = { path = "macros", version = "0.0.1" }
+riscv-rt-macros = { version = "0.2.0" }
 
 [workspace]
 members = ["ch32v-rt-macros"]
