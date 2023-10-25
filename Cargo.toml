@@ -13,9 +13,7 @@ readme = "README.md"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-# For now, unused
 ch32v-rt-macros = { path = "macros", version = "0.0.1" }
-# riscv-rt-macros = { version = "0.2.0" }
 
 [workspace]
 members = ["macros"]
