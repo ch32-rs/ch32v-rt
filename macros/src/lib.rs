@@ -1,4 +1,5 @@
-use proc_macro2::Span;
+use proc_macro2::{Ident, Span};
+use proc_macro_error::proc_macro_error;
 use syn::{
     parse, parse_macro_input, spanned::Spanned, ItemFn, PathArguments, ReturnType, Type, Visibility,
 };
@@ -76,4 +77,101 @@ fn is_simple_type(ty: &Type, name: &str) -> bool {
         }
     }
     false
+}
+
+/// This attribute allows placing functions into ram.
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn highcode(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let f = parse_macro_input!(input as ItemFn);
+
+    let section = quote! {
+        #[link_section = ".highcode"]
+        #[inline(never)] // make certain function is not inlined
+    };
+
+    quote!(
+        #section
+        #f
+    )
+    .into()
+}
+
+/// Marks a function as an interrupt handler
+#[proc_macro_attribute]
+pub fn interrupt(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let mut f = parse_macro_input!(input as ItemFn);
+
+    // check the function arguments
+    if !f.sig.inputs.is_empty() {
+        return parse::Error::new(
+            f.sig.inputs.last().unwrap().span(),
+            "`#[interrupt]` function accepts no arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    let ident = f.sig.ident.clone();
+    let ident_s = &ident.clone();
+
+    let valid_signature = f.sig.constness.is_none()
+        && f.vis == Visibility::Inherited
+        && f.sig.abi.is_none()
+        && f.sig.generics.params.is_empty()
+        && f.sig.generics.where_clause.is_none()
+        && f.sig.variadic.is_none()
+        && match f.sig.output {
+            ReturnType::Default => true,
+            ReturnType::Type(_, ref ty) => match **ty {
+                Type::Tuple(ref tuple) => tuple.elems.is_empty(),
+                Type::Never(..) => true,
+                _ => false,
+            },
+        }
+        && f.sig.inputs.len() <= 1;
+
+    if !valid_signature {
+        return parse::Error::new(
+            f.span(),
+            "`#[interrupt]` handlers must have signature `[unsafe] fn() [-> !]`",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    let inner_fn_export_name = format!("__ch32v_rt_internal_{}", f.sig.ident);
+    f.sig.ident = Ident::new(&inner_fn_export_name, proc_macro2::Span::call_site());
+
+    // let ident = &f.sig.ident;
+    let interrupt_name = ident_s.to_string();
+
+    //let attrs = f.attrs;
+    //let unsafety = f.sig.unsafety;
+
+    // global asm to add mret instruction at the end of the interrupt handler
+    let asm_src = format!(
+        r#"
+        .section .trap, "ax"
+        .global {0}
+    {0}:
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        jal {1}
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        mret
+    "#,
+        interrupt_name, inner_fn_export_name
+    );
+
+    quote!(
+        core::arch::global_asm!(#asm_src);
+
+        #[link_section = ".trap"]
+        #[export_name = #inner_fn_export_name]
+        #[allow(non_snake_case)]
+        #f
+    )
+    .into()
 }
