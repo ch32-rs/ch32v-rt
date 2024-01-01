@@ -7,7 +7,7 @@ repository = "https://github.com/ch32v-rs/ch32v-rt"
 documentation = "https://docs.rs/ch32v-rt"
 homepage = "https://github.com/ch32v-rs/ch32v-rt"
 categories = ["embedded", "no-std"]
-description = "Attributes re-exported in `ch32v-rt`"
+description = "DEPRECATED: use qingke-rt-macros instead"
 keywords = ["riscv", "runtime", "startup"]
 license = "MIT/Apache-2.0"
 

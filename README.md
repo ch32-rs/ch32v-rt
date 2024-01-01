@@ -1,3 +1,5 @@
+# DEPRECATED - replaced by qingke-rt <https://github.com/ch32-rs/qingke>
+
 # ch32v-rt
 
 Runtime support for WCH's 32bit RISC-V MCUs.
